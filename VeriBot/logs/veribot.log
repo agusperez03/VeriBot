@@ -1,0 +1,44 @@
+2025-04-25 10:24:09.864 [main] INFO  com.veribot.VeriBot - Starting VeriBot News Verification Agent
+2025-04-25 10:24:09.887 [main] ERROR com.veribot.VeriBot - Error initializing VeriBot: Could not find /.env on the classpath
+io.github.cdimascio.dotenv.DotenvException: Could not find /.env on the classpath
+	at io.github.cdimascio.dotenv.internal.ClasspathHelper.loadFileFromClasspath(ClasspathHelper.java:25)
+	at io.github.cdimascio.dotenv.internal.DotenvReader.read(DotenvReader.java:55)
+	at io.github.cdimascio.dotenv.internal.DotenvParser.lines(DotenvParser.java:87)
+	at io.github.cdimascio.dotenv.internal.DotenvParser.parse(DotenvParser.java:60)
+	at io.github.cdimascio.dotenv.DotenvBuilder.load(DotenvBuilder.java:76)
+	at io.github.cdimascio.dotenv.Dotenv.load(Dotenv.java:38)
+	at com.veribot.config.AzureOpenAIConfig.<init>(AzureOpenAIConfig.java:18)
+	at com.veribot.VeriBot.main(VeriBot.java:35)
+	Suppressed: io.github.cdimascio.dotenv.DotenvException: Could not find ./.env on the file system (working directory: /home/roman7978/Documentos/VeriBot/VeriBot)
+		at io.github.cdimascio.dotenv.internal.DotenvReader.read(DotenvReader.java:60)
+		... 6 common frames omitted
+2025-04-25 10:28:02.304 [main] INFO  com.veribot.VeriBot - Starting VeriBot News Verification Agent
+2025-04-25 10:28:02.342 [main] ERROR com.veribot.VeriBot - Error initializing VeriBot: Could not find /.env on the classpath
+io.github.cdimascio.dotenv.DotenvException: Could not find /.env on the classpath
+	at io.github.cdimascio.dotenv.internal.ClasspathHelper.loadFileFromClasspath(ClasspathHelper.java:25)
+	at io.github.cdimascio.dotenv.internal.DotenvReader.read(DotenvReader.java:55)
+	at io.github.cdimascio.dotenv.internal.DotenvParser.lines(DotenvParser.java:87)
+	at io.github.cdimascio.dotenv.internal.DotenvParser.parse(DotenvParser.java:60)
+	at io.github.cdimascio.dotenv.DotenvBuilder.load(DotenvBuilder.java:76)
+	at io.github.cdimascio.dotenv.Dotenv.load(Dotenv.java:38)
+	at com.veribot.config.AzureOpenAIConfig.<init>(AzureOpenAIConfig.java:18)
+	at com.veribot.VeriBot.main(VeriBot.java:35)
+	Suppressed: io.github.cdimascio.dotenv.DotenvException: Could not find ./.env on the file system (working directory: /home/roman7978/Documentos/VeriBot/VeriBot)
+		at io.github.cdimascio.dotenv.internal.DotenvReader.read(DotenvReader.java:60)
+		... 6 common frames omitted
+2025-04-25 10:48:00.104 [main] INFO  com.veribot.VeriBot - Starting VeriBot News Verification Agent
+2025-04-25 10:48:01.295 [main] INFO  c.veribot.service.NewsSearchService - NewsSearchService initialized with SerpApi
+2025-04-25 10:48:01.296 [main] INFO  c.veribot.service.NewsSearchService - Searching for news with query: Noticias destacadas Italia 24 abril 2024 eventos relevantes
+2025-04-25 10:48:08.223 [main] INFO  c.veribot.service.NewsSearchService - Parsed 0 news results from SerpAPI response
+2025-04-25 10:56:01.880 [main] INFO  com.veribot.VeriBot - Starting VeriBot News Verification Agent
+2025-04-25 10:56:02.133 [main] INFO  c.veribot.service.NewsSearchService - NewsSearchService initialized with SerpApi
+2025-04-25 10:56:02.133 [main] INFO  c.veribot.service.NewsSearchService - Searching for news with query: Noticias destacadas Italia 24 abril 2024
+2025-04-25 10:56:06.661 [main] INFO  c.veribot.service.NewsSearchService - Parsed 3 news results from SerpAPI response
+2025-04-25 11:55:48.946 [main] INFO  com.veribot.VeriBot - Starting VeriBot News Verification Agent
+2025-04-25 11:55:50.049 [main] INFO  c.veribot.service.NewsSearchService - NewsSearchService initialized with SerpApi
+2025-04-25 11:55:50.050 [main] INFO  c.veribot.service.NewsSearchService - Searching for news with query: Noticias destacadas Italia 24 abril 2024
+2025-04-25 11:55:52.455 [main] INFO  c.veribot.service.NewsSearchService - Parsed 5 news results from SerpAPI response
+2025-04-25 11:57:04.788 [main] INFO  com.veribot.VeriBot - Starting VeriBot News Verification Agent
+2025-04-25 11:57:05.093 [main] INFO  c.veribot.service.NewsSearchService - NewsSearchService initialized with SerpApi
+2025-04-25 11:57:05.093 [main] INFO  c.veribot.service.NewsSearchService - Searching for news with query: Notices Italy 04/24/2025
+2025-04-25 11:57:06.699 [main] INFO  c.veribot.service.NewsSearchService - Parsed 5 news results from SerpAPI response

@@ -1,15 +1,23 @@
 package com.veribot.service;
 
 import com.veribot.config.AzureBingSearchConfig;
+import com.veribot.config.SerpApiConfig;
+
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.Metadata;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
+import java.util.List;
 
 import java.io.IOException;
 import java.net.URI;
+
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -28,29 +36,19 @@ public class NewsSearchService {
     private static final int DEFAULT_MAX_RESULTS = 5;
     
     private final String apiKey;
-    private final String endpoint;
     private final HttpClient httpClient;
+    
+    private static final String baseUrl = "https://serpapi.com/search.json";
 
     /**
      * Creates a new NewsSearchService with the provided configuration.
      *
-     * @param config the Azure Bing Search configuration
+     * @param config the Serp Api Configuration.
      */
-    public NewsSearchService(AzureBingSearchConfig config) {
+    public NewsSearchService(SerpApiConfig config) {
         this.apiKey = config.getApiKey();
-        this.endpoint = config.getEndpoint();
         this.httpClient = HttpClient.newHttpClient();
-        logger.info("NewsSearchService initialized with Azure Bing Search");
-    }
-
-    /**
-     * Searches for news articles and information using the provided query.
-     *
-     * @param query the search query
-     * @return a list of documents containing relevant information
-     */
-    public List<Document> searchNews(String query) {
-        return searchNews(query, DEFAULT_MAX_RESULTS);
+        logger.info("NewsSearchService initialized with SerpApi");
     }
 
     /**
@@ -60,11 +58,19 @@ public class NewsSearchService {
      * @param maxResults the maximum number of results to return
      * @return a list of documents containing relevant information
      */
-    public List<Document> searchNews(String query, int maxResults) {
+    public List<Document> searchNews(String query, String country, String language) {
+    	int maxResults = DEFAULT_MAX_RESULTS;
         logger.info("Searching for news with query: {}", query);
         try {
-            String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
-            String requestUrl = endpoint + "?q=" + encodedQuery + "&count=" + maxResults;
+        	String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
+        	
+            String requestUrl = baseUrl +
+            					"?engine=google&q=" + encodedQuery +
+                                "&api_key=" + apiKey +
+                                "&gl=" + country +          // Country
+                                "&hl=" +country+          // Language
+                                "&tbm=nws" +language+       // News search only
+                                "&num=" + maxResults;
             
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(requestUrl))
@@ -75,9 +81,9 @@ public class NewsSearchService {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             
             if (response.statusCode() == 200) {
-                return parseBingSearchResponse(response.body());
+                return parseSerpApiResponse(response.body(), maxResults);
             } else {
-                logger.error("Bing Search API returned error: {} - {}", response.statusCode(), response.body());
+            	logger.error("SerpAPI returned error: {} - {}", response.statusCode(), response.body());
                 return new ArrayList<>();
             }
         } catch (IOException | InterruptedException e) {
@@ -88,93 +94,95 @@ public class NewsSearchService {
     }
     
     /**
-     * Parses the Bing Search API response and converts it to Document objects.
+     * Parses the Serp Api response and converts it to Document objects.
      * 
-     * @param responseBody the JSON response from the Bing Search API
+     * @param responseBody the JSON response from the SerpApi
      * @return a list of Document objects
      */
-    private List<Document> parseBingSearchResponse(String responseBody) {
-        List<Document> documents = new ArrayList<>();
-        
+    private List<Document> parseSerpApiResponse(String responseBody, int maxResults) {
+    	List<Document> results = new ArrayList<>();
         try {
-            JSONObject responseJson = new JSONObject(responseBody);
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode rootNode = objectMapper.readTree(responseBody);
             
-            // Check if webPages section exists
-            if (responseJson.has("webPages") && responseJson.getJSONObject("webPages").has("value")) {
-                JSONArray results = responseJson.getJSONObject("webPages").getJSONArray("value");
+            
+            // We first tried to get news from "people_also_search_for"
+            if (rootNode.has("people_also_search_for")) {
+                JsonNode pasf = rootNode.get("people_also_search_for");
                 
-                for (int i = 0; i < results.length(); i++) {
-                    JSONObject result = results.getJSONObject(i);
-                    
-                    String name = result.optString("name", "");
-                    String url = result.optString("url", "");
-                    String snippet = result.optString("snippet", "");
-                    
-                    // Extract domain as source
-                    String source = extractDomainFromUrl(url);
-                    
-                    // Combine name and snippet for the document text
-                    StringBuilder contentBuilder = new StringBuilder();
-                    contentBuilder.append("Title: ").append(name).append("\n\n");
-                    contentBuilder.append("Content: ").append(snippet);
-                    
-                    // Create metadata using a Map
-                    Map<String, String> metadataMap = new HashMap<>();
-                    metadataMap.put("source", source);
-                    metadataMap.put("url", url);
-                    metadataMap.put("title", name);
-                    
-                    Metadata metadata = new Metadata(metadataMap);
-                    
-                    Document document = Document.from(contentBuilder.toString(), metadata);
-                    documents.add(document);
+                for (JsonNode item : pasf) {
+                    if (item.has("news_results")) {
+                        JsonNode newsResults = item.get("news_results");
+                        for (JsonNode news : newsResults) {
+                            if (news.has("link")) {       
+                                String link = news.get("link").asText();
+                                String title = news.has("title") ? news.get("title").asText() : "";
+                                String source = news.has("source") ? news.get("source").asText() : "";
+                                String date = news.has("date") ? news.get("date").asText() : "";
+                                
+                                StringBuilder contentBuilder = new StringBuilder();
+                                Map<String, String> metadataMap = new HashMap<>();
+                                contentBuilder.append("Title: ").append(title);
+                                contentBuilder.append("Date: ").append(date);
+                                contentBuilder.append("Source: ").append(source);
+
+                                metadataMap.put("date", date);
+                                metadataMap.put("source", source);
+                                metadataMap.put("link", link);
+                                
+                                Metadata metadata = new Metadata(metadataMap);
+                                Document doc = Document.from(contentBuilder.toString(), metadata);
+                                
+                                results.add(doc);
+                                if (results.size() >= maxResults) {
+                                    return results;
+                                }
+                                
+                            }
+                        }
+                    }
                 }
             }
             
-            // Check if news section exists
-            if (responseJson.has("news") && responseJson.getJSONObject("news").has("value")) {
-                JSONArray newsResults = responseJson.getJSONObject("news").getJSONArray("value");
-                
-                for (int i = 0; i < newsResults.length(); i++) {
-                    JSONObject result = newsResults.getJSONObject(i);
-                    
-                    String name = result.optString("name", "");
-                    String url = result.optString("url", "");
-                    String description = result.optString("description", "");
-                    
-                    // Extract provider (source)
-                    String source = "";
-                    if (result.has("provider") && result.getJSONArray("provider").length() > 0) {
-                        source = result.getJSONArray("provider").getJSONObject(0).optString("name", "");
+            // If there aren't enough results or "people_also_search_for" wasn't found,
+            // we search in "news_results"
+            if (results.size() < maxResults && rootNode.has("news_results")) {
+                JsonNode newsResults = rootNode.get("news_results");
+                for (JsonNode news : newsResults) {
+                    if (news.has("link")) {
+                        String link = news.get("link").asText();
+                        String title = news.has("title") ? news.get("title").asText() : "";
+                        String source = news.has("source") ? news.get("source").asText() : "";
+                        String date = news.has("date") ? news.get("date").asText() : "";
+                        
+                        StringBuilder contentBuilder = new StringBuilder();
+                        Map<String, String> metadataMap = new HashMap<>();
+                        contentBuilder.append("Title: ").append(title);
+                        contentBuilder.append("Date: ").append(date);
+                        contentBuilder.append("Source: ").append(source);
+
+                        metadataMap.put("date", date);
+                        metadataMap.put("source", source);
+                        metadataMap.put("link", link);
+                        
+                        Metadata metadata = new Metadata(metadataMap);
+                        Document doc = Document.from(contentBuilder.toString(), metadata);
+                        
+                        results.add(doc);
+                        if (results.size() >= maxResults) {
+                            break;
+                        }
                     }
-                    
-                    if (source.isEmpty()) {
-                        source = extractDomainFromUrl(url);
-                    }
-                    
-                    // Combine name and description for the document text
-                    StringBuilder contentBuilder = new StringBuilder();
-                    contentBuilder.append("News Title: ").append(name).append("\n\n");
-                    contentBuilder.append("Content: ").append(description);
-                    
-                    // Create metadata using a Map
-                    Map<String, String> metadataMap = new HashMap<>();
-                    metadataMap.put("source", source);
-                    metadataMap.put("url", url);
-                    metadataMap.put("title", name);
-                    
-                    Metadata metadata = new Metadata(metadataMap);
-                    
-                    Document document = Document.from(contentBuilder.toString(), metadata);
-                    documents.add(document);
                 }
             }
             
-        } catch (Exception e) {
-            logger.error("Error parsing Bing Search results: {}", e.getMessage(), e);
+            logger.info("Parsed {} news results from SerpAPI response", results.size());
+            return results;
+            
+        } catch (JsonProcessingException e) {
+            logger.error("Error parsing SerpAPI JSON response: {}", e.getMessage(), e);
+            return results;
         }
-        
-        return documents;
     }
     
     /**
@@ -202,4 +210,6 @@ public class NewsSearchService {
         
         return domain;
     }
+    
+    
 }

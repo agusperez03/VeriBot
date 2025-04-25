@@ -12,7 +12,7 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <langchain4j.version>0.27.1</langchain4j.version>
+        <langchain4j.version>0.31.0</langchain4j.version>
         <dotenv-java.version>3.0.0</dotenv-java.version>
         <logback.version>1.4.14</logback.version>
         <json.version>20231013</json.version>
@@ -29,17 +29,23 @@
         <!-- LangChain4j Azure OpenAI Integration -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-azure-openai</artifactId>
+            <artifactId>langchain4j-azure-open-ai</artifactId>
             <version>${langchain4j.version}</version>
         </dependency>
 
         <!-- Web Search Integration -->
         <dependency>
+		    <groupId>io.github.cdimascio</groupId>
+		    <artifactId>dotenv-java</artifactId>
+		    <version>2.3.1</version>
+		</dependency>
+        <!--
+        <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-microsoft-bing-search</artifactId>
             <version>${langchain4j.version}</version>
         </dependency>
-
+        -->
         <!-- JSON Processing -->
         <dependency>
             <groupId>org.json</groupId>
