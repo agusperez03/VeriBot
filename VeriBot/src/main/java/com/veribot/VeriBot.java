@@ -2,12 +2,18 @@ package com.veribot;
 
 import com.veribot.config.AzureBingSearchConfig;
 import com.veribot.config.AzureOpenAIConfig;
+import com.veribot.config.SerpApiConfig;
 import com.veribot.model.NewsVerificationResult;
 import com.veribot.service.NewsSearchService;
 import com.veribot.service.NewsVerificationService;
+
+import dev.langchain4j.data.document.Document;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -27,14 +33,26 @@ public class VeriBot {
         try {
             // Initialize configurations
             AzureOpenAIConfig openAIConfig = new AzureOpenAIConfig();
-            AzureBingSearchConfig bingSearchConfig = new AzureBingSearchConfig();
+            //AzureBingSearchConfig bingSearchConfig = new AzureBingSearchConfig();
+            SerpApiConfig serpApiConfig = new SerpApiConfig();
 
             // Initialize services
-            NewsSearchService searchService = new NewsSearchService(bingSearchConfig);
-            NewsVerificationService verificationService = new NewsVerificationService(openAIConfig, searchService);
-
+            NewsSearchService searchService = new NewsSearchService(serpApiConfig);
+            
+            List<String> query = new ArrayList<String>();
+            query.add("Notices Italy 04/24/2025");
+            query.add("Resumen noticias principales hoy Argentina actualizado");
+            query.add("Últimas novedades cepo cambiario Argentina abril 2024 actualización");
+            query.add("Últimas noticias sobre el Papa Francisco mayo 2024 razones tendencias");
+            
+            for(Document doc : searchService.searchNews(query.get(0),"it","it")) { 
+            	System.out.println(doc.text());
+            }
+            
+            //NewsVerificationService verificationService = new NewsVerificationService(openAIConfig, searchService);
+            
             // Start the user interaction loop
-            runInteractiveMode(verificationService);
+            //runInteractiveMode(verificationService);
         } catch (Exception e) {
             logger.error("Error initializing VeriBot: {}", e.getMessage(), e);
             System.err.println("Failed to start VeriBot: " + e.getMessage());
