@@ -1,0 +1,60 @@
+2025-04-26 11:10:53.565 [main] INFO  com.veribot.VeriBot - Starting VeriBot News Verification Agent
+2025-04-26 11:10:53.571 [main] ERROR com.veribot.VeriBot - Error initializing VeriBot: Could not find /.env on the classpath
+io.github.cdimascio.dotenv.DotenvException: Could not find /.env on the classpath
+	at io.github.cdimascio.dotenv.internal.ClasspathHelper.loadFileFromClasspath(ClasspathHelper.java:25)
+	at io.github.cdimascio.dotenv.internal.DotenvReader.read(DotenvReader.java:55)
+	at io.github.cdimascio.dotenv.internal.DotenvParser.lines(DotenvParser.java:87)
+	at io.github.cdimascio.dotenv.internal.DotenvParser.parse(DotenvParser.java:60)
+	at io.github.cdimascio.dotenv.DotenvBuilder.load(DotenvBuilder.java:76)
+	at io.github.cdimascio.dotenv.Dotenv.load(Dotenv.java:38)
+	at com.veribot.config.AzureOpenAIConfig.<init>(AzureOpenAIConfig.java:18)
+	at com.veribot.VeriBot.main(VeriBot.java:35)
+	Suppressed: io.github.cdimascio.dotenv.DotenvException: Could not find .\.env on the file system (working directory: C:\Users\agust\OneDrive\Desktop\Universidad\Hackaton2025\VeriBot)
+		at io.github.cdimascio.dotenv.internal.DotenvReader.read(DotenvReader.java:60)
+		... 6 common frames omitted
+2025-04-26 11:14:05.164 [main] INFO  com.veribot.VeriBot - Starting VeriBot News Verification Agent
+2025-04-26 11:14:05.364 [main] INFO  c.veribot.service.NewsSearchService - NewsSearchService initialized with SerpApi
+2025-04-26 11:14:05.364 [main] INFO  c.veribot.service.NewsSearchService - Searching for news with query: Últimas novedades cepo cambiario Argentina abril 2024 actualización
+2025-04-26 11:14:09.291 [main] INFO  c.veribot.service.NewsSearchService - Parsed 5 news results from SerpAPI response
+2025-04-26 12:18:32.943 [main] INFO  com.veribot.VeriBot - Starting VeriBot News Verification Agent
+2025-04-26 12:18:33.145 [main] INFO  c.veribot.service.NewsSearchService - NewsSearchService initialized with SerpApi
+2025-04-26 12:18:33.158 [main] INFO  c.v.service.NewsVerificationService - NewsVerificationService initialized with Azure OpenAI
+2025-04-26 12:19:34.851 [main] INFO  c.veribot.service.NewsSearchService - Searching for news with query: latest news Argentina today
+2025-04-26 12:19:45.075 [main] INFO  c.veribot.service.NewsSearchService - Parsed 4 news results from SerpAPI response
+2025-04-26 12:30:02.924 [main] INFO  com.veribot.VeriBot - Starting VeriBot News Verification Agent
+2025-04-26 12:30:03.126 [main] INFO  c.veribot.service.NewsSearchService - NewsSearchService initialized with SerpApi
+2025-04-26 12:30:03.128 [main] INFO  c.v.service.NewsVerificationService - NewsVerificationService initialized with Azure OpenAI
+2025-04-26 12:30:14.733 [main] INFO  c.veribot.service.NewsSearchService - Searching for news with query: Nahir Galarza biography achievements
+2025-04-26 12:30:16.088 [main] INFO  c.veribot.service.NewsSearchService - Parsed 0 news results from SerpAPI response
+2025-04-26 12:32:57.604 [main] INFO  c.veribot.service.NewsSearchService - Searching for news with query: últimas noticias Nahir Galarza 2023
+2025-04-26 12:33:03.855 [main] INFO  c.veribot.service.NewsSearchService - Parsed 5 news results from SerpAPI response
+2025-04-26 12:33:03.856 [main] ERROR com.veribot.VeriBot - Error processing query: Conversion = ')'
+java.util.UnknownFormatConversionException: Conversion = ')'
+	at java.base/java.util.Formatter.parse(Unknown Source)
+	at java.base/java.util.Formatter.format(Unknown Source)
+	at java.base/java.util.Formatter.format(Unknown Source)
+	at java.base/java.lang.String.format(Unknown Source)
+	at com.veribot.service.NewsVerificationService.analyzeNewsContent(NewsVerificationService.java:200)
+	at com.veribot.service.NewsVerificationService.verifyNews(NewsVerificationService.java:88)
+	at com.veribot.VeriBot.runInteractiveMode(VeriBot.java:97)
+	at com.veribot.VeriBot.main(VeriBot.java:55)
+2025-04-26 12:38:28.930 [main] INFO  com.veribot.VeriBot - Starting VeriBot News Verification Agent
+2025-04-26 12:38:29.129 [main] INFO  c.veribot.service.NewsSearchService - NewsSearchService initialized with SerpApi
+2025-04-26 12:38:29.143 [main] INFO  c.v.service.NewsVerificationService - NewsVerificationService initialized with Azure OpenAI
+2025-04-26 12:38:39.529 [main] INFO  c.veribot.service.NewsSearchService - Searching for news with query: últimas noticias Nahir Galarza 2023
+2025-04-26 12:38:42.202 [main] INFO  c.veribot.service.NewsSearchService - Parsed 5 news results from SerpAPI response
+2025-04-26 12:48:21.795 [main] INFO  com.veribot.VeriBot - Starting VeriBot News Verification Agent
+2025-04-26 12:48:21.993 [main] INFO  c.veribot.service.NewsSearchService - NewsSearchService initialized with SerpApi
+2025-04-26 12:48:22.005 [main] INFO  c.v.service.NewsVerificationService - NewsVerificationService initialized with Azure OpenAI
+2025-04-26 13:01:03.515 [main] INFO  com.veribot.VeriBot - Starting VeriBot News Verification Agent
+2025-04-26 13:01:03.716 [main] INFO  c.veribot.service.NewsSearchService - NewsSearchService initialized with SerpApi
+2025-04-26 13:01:03.729 [main] INFO  c.v.service.NewsVerificationService - NewsVerificationService initialized with Azure OpenAI
+2025-04-26 13:01:17.008 [main] INFO  c.veribot.service.NewsSearchService - Searching for news with query: Roca Rock Tandil Argentina October 2023
+2025-04-26 13:01:19.201 [main] INFO  c.veribot.service.NewsSearchService - Parsed 0 news results from SerpAPI response
+2025-04-26 13:09:33.777 [main] INFO  com.veribot.VeriBot - Starting VeriBot News Verification Agent
+2025-04-26 13:09:33.970 [main] INFO  c.veribot.service.NewsSearchService - NewsSearchService initialized with SerpApi
+2025-04-26 13:09:33.984 [main] INFO  c.v.service.NewsVerificationService - NewsVerificationService initialized with Azure OpenAI
+2025-04-26 13:09:50.405 [main] INFO  c.veribot.service.NewsSearchService - Searching for news with query: Roca Rock Tandil 2025-04-26
+2025-04-26 13:10:03.011 [main] INFO  c.veribot.service.NewsSearchService - Parsed 5 news results from SerpAPI response
+2025-04-26 13:11:27.316 [main] INFO  c.veribot.service.NewsSearchService - Searching for news with query: Cumpleaños Olavarría 2024
+2025-04-26 13:11:35.852 [main] INFO  c.veribot.service.NewsSearchService - Parsed 5 news results from SerpAPI response

@@ -1,12 +1,9 @@
 package com.veribot.service;
 
-import com.veribot.config.AzureBingSearchConfig;
 import com.veribot.config.SerpApiConfig;
 
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.Metadata;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -28,9 +25,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -211,7 +206,6 @@ public class NewsSearchService {
      * @return the plain text
      */
     private String textOfPage(String URL) {
-		// TODO Auto-generated method stub
     	try {
 	    	String html = Jsoup.connect(URL)
 	                .userAgent("Mozilla/5.0")
@@ -231,32 +225,4 @@ public class NewsSearchService {
 		}
 
 	}
-
-	/**
-     * Extracts the domain name from a URL.
-     *
-     * @param url the URL to extract from
-     * @return the domain name
-     */
-    private String extractDomainFromUrl(String url) {
-        if (url == null || url.isEmpty()) {
-            return "";
-        }
-        
-        // Remove protocol if present
-        String domain = url.replaceAll("^https?://", "");
-        
-        // Remove www. if present
-        domain = domain.replaceAll("^www\\.", "");
-        
-        // Get domain up to the first /
-        int slashIndex = domain.indexOf('/');
-               if (slashIndex != -1) {
-            domain = domain.substring(0, slashIndex);
-        }
-        
-        return domain;
-    }
-    
-    
 }

@@ -14,6 +14,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -61,18 +64,29 @@ public class NewsVerificationService {
             return createInvalidQueryResponse();
         }
 
-        // 2. Generate search query
-        String searchQuery = generateSearchQuery(userQuery);
+        // 2. Generate search query and user's country
+        String[] searchQueryAndCountry = generateSearchQuery(userQuery);
+        String searchQuery = searchQueryAndCountry[0];
+        String countryName = searchQueryAndCountry[1];
+
+        String countryCode = "ar";    //Default values
+        String languageCode = "es";
+        
+        String[] countryLang = CountryLanguageUtils.findCountryAndLanguage(countryName);
+        if (countryLang != null) {
+            countryCode = countryLang[0];
+            languageCode = countryLang[1];
+        }
         
         // 3. Search for relevant information
-        List<Document> searchResults = searchService.searchNews(searchQuery);
+        List<Document> searchResults = searchService.searchNews(searchQuery, countryCode, languageCode);
         
         if (searchResults.isEmpty()) {
             return createNoResultsResponse(userQuery);
         }
 
         // 4. Analyze the search results
-        return analyzeNewsContent(userQuery, searchResults);
+        return analyzeNewsContent(userQuery, searchResults, languageCode);
     }
 
     /**
@@ -83,42 +97,60 @@ public class NewsVerificationService {
      */
     private boolean isNewsRelatedQuery(String query) {
         String promptTemplate = """
-            Determine if the following query is related to news content, fact verification, 
-            or current events that could be found in news sources.
-                        
+            Classify the following query for its likelihood to be related to news content:
+
+            - LIKELY: It can reasonably appear in news articles (even local news).
+            - UNLIKELY: It is technical, informational, or clearly unrelated to news.
+
             Query: %s
-                        
-            Answer only with YES if it's news related, or NO if it's not news related.
+
+            Respond only with LIKELY or UNLIKELY.
             """;
         
         String prompt = String.format(promptTemplate, query);
         String response = generateAzureOpenAIResponse(prompt, 0.0);
         
         logger.debug("News validation response: {}", response);
-        return response.trim().toUpperCase().contains("YES");
+        return response.trim().toUpperCase().contains("LIKELY");
     }
 
     /**
-     * Generates an optimized search query based on the user's input.
+     * Generates an optimized search query and infers the user's country based on the input.
      *
      * @param userQuery the user's original query
-     * @return an optimized search query for news search
+     * @return a String array where [0] is the optimized search query, and [1] is the inferred country name
      */
-    private String generateSearchQuery(String userQuery) {
+    private String[] generateSearchQuery(String userQuery) {
+        LocalDate currentDate = LocalDate.now();
         String promptTemplate = """
-            Convert the following user query about news or current events into an optimized search query.
-            Focus on key facts, dates, places, or persons that would be useful for a web search.
-                        
+            Given the following user query, do two things:
+            1. Convert it into an optimized search query, focusing on key facts, dates, places, or persons. If the user did not specify a date, append this date %s.
+            2. Guess the country related to the query or the user, based on the context (e.g., if the query mentions a country, city, or uses a specific language).
+            
+            Return the answer ONLY in this exact JSON format:
+            {
+            "search_query": "your optimized search query here",
+            "country": "guessed country name here"
+            }
+            
             User query: %s
-                        
-            Return ONLY the optimized search query, nothing else.
             """;
-        
-        String prompt = String.format(promptTemplate, userQuery);
+
+        String prompt = String.format(promptTemplate, currentDate, userQuery);
         String response = generateAzureOpenAIResponse(prompt, 0.0);
-        
-        logger.debug("Generated search query: {}", response);
-        return response.trim();
+
+        logger.debug("Generated search query and country: {}", response);
+
+        try {
+            JSONObject jsonResponse = extractJsonObject(response);
+            String searchQuery = jsonResponse.getString("search_query").trim();
+            String country = jsonResponse.getString("country").trim();
+            return new String[]{searchQuery, country};
+        } catch (Exception e) {
+            logger.error("Error parsing search query and country: {}", e.getMessage(), e);
+            // Fallback in case of parsing error
+            return new String[]{userQuery, "Unknown"};
+        }
     }
 
     /**
@@ -155,47 +187,66 @@ public class NewsVerificationService {
      *
      * @param query the user's original query
      * @param documents the search results to analyze
+     * @param languageCode the ISO 639-1 language code to respond in (e.g., "es" for Spanish)
      * @return a NewsVerificationResult with the analysis
      */
-    private NewsVerificationResult analyzeNewsContent(String query, List<Document> documents) {
+    private NewsVerificationResult analyzeNewsContent(String query, List<Document> documents, String languageCode) {
         // Extract text content from documents
         String contentToAnalyze = documents.stream()
                 .map(Document::text)
                 .collect(Collectors.joining("\n\n"));
-        
+
         // Extract source information from documents
         List<String> sources = extractSources(documents);
-        
-        String systemPrompt = """
+
+        String languageInstruction = getLanguageInstruction(languageCode);
+
+        String systemPrompt = String.format("""
             You are an expert news verification agent that verifies information based on multiple sources.
             Analyze the news content provided and determine:
-            1. A clear, objective, and concise summary (2-3 sentences)
-            2. The percentage of truthfulness (0-100%) based on consistency across sources and factual support
+            1. A clear, objective, and concise summary
+            2. The percentage of truthfulness (0-100%%) based on consistency across sources and factual support
             3. A brief justification for your truthfulness rating
-                        
+
+            Respond %s.
+
             Format your response exactly as follows (JSON format):
             {
-              "summary": "your summary here",
-              "truthfulness_percentage": number between 0-100,
-              "justification": "your justification here"
+            "summary": "your summary here",
+            "truthfulness_percentage": number between 0-100,
+            "justification": "your justification here"
             }
-            """;
-        
-        String userPrompt = """
+            """, languageInstruction);
+
+        String userPrompt = String.format("""
             System: %s
             
             Query: %s
                         
             Content to verify:
             %s
-            """;
-        
-        String formattedPrompt = String.format(userPrompt, systemPrompt, query, contentToAnalyze);
-        String response = generateAzureOpenAIResponse(formattedPrompt, 0.0);
-        
+            """, systemPrompt, query, contentToAnalyze);
+
+        String response = generateAzureOpenAIResponse(userPrompt, 0.0);
+
         logger.debug("Verification analysis response: {}", response);
-        
+
         return parseVerificationResponse(response, sources);
+    }
+
+    private String getLanguageInstruction(String languageCode) {
+        return switch (languageCode) {
+            case "es" -> "in Spanish";
+            case "en" -> "in English";
+            case "fr" -> "in French";
+            case "ar" -> "in Arabic";
+            case "de" -> "in German";
+            case "it" -> "in Italian";
+            case "pt" -> "in Portuguese";
+            case "ru" -> "in Russian";
+            case "zh" -> "in Chinese";
+            default -> "in the most appropriate language"; // fallback general
+        };
     }
 
     /**
@@ -393,4 +444,37 @@ public class NewsVerificationService {
         // If no JSON-like pattern was found, try with the whole text
         return new JSONObject(text);
     }
+
+    public class CountryLanguageUtils {
+
+        /**
+         * Finds the country and language code for a given country name.
+         *
+         * @param countryName the name of the country
+         * @return a String array: [countryCode, languageCode], or null if not found
+         */
+        public static String[] findCountryAndLanguage(String countryName) {
+            try {
+                String path = "VeriBot/google_countries.JSON"; // ajustalo si tu ruta es distinta
+                String content = Files.readString(Paths.get(path));
+                JSONArray countriesArray = new JSONArray(content);
+
+                for (int i = 0; i < countriesArray.length(); i++) {
+                    JSONObject obj = countriesArray.getJSONObject(i);
+                    String name = obj.getString("country_name").trim();
+
+                    if (name.equalsIgnoreCase(countryName.trim())) {
+                        String countryCode = obj.getString("country_code");
+                        String languageCode = obj.getString("language_code");
+                        return new String[]{countryCode, languageCode};
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            return null; // si no encuentra nada
+        }
+    }
+
 }
