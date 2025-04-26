@@ -39,19 +39,20 @@
 		    <artifactId>dotenv-java</artifactId>
 		    <version>2.3.1</version>
 		</dependency>
-        <!--
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-microsoft-bing-search</artifactId>
-            <version>${langchain4j.version}</version>
-        </dependency>
-        -->
+		
         <!-- JSON Processing -->
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
             <version>${json.version}</version>
         </dependency>
+		
+		<!-- Read HTML with Readability4J -->
+		<dependency>
+			<groupId>net.dankito.readability4j</groupId>
+		   	<artifactId>readability4j</artifactId>
+		   	<version>1.0.8</version>
+		</dependency>
 
         <!-- Environment Variables Management -->
         <dependency>
