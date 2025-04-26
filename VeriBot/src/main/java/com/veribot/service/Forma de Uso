@@ -1,0 +1,36 @@
+Forma de uso del NewSeachService.
+-----------------------------------
+
+La clase recibe como parámetro para su inicialización el serpApiConfig
+
+El método principal es searchNews.
+
+----
+
+Pasos.
+
+1. Utilizo searchNews.
+	a. Paso como parámetro la query, el código del país y el idioma.
+
+2. El método crea la URL y el request.
+
+3. Llama a la API de busqueda serpApi.
+
+4. Si la respuesta es un 200, se procede a llamar al método parseSerpApiResponse.
+	a. Como parámetro se le pasa el cuerpo de la respuesta y la cantidad de resultados que se espera.
+	
+5. El método busca en el JSON la etiqueta "people_also_search_for"
+	a. Si no la encuetra buscará "news_results"
+	b. Si la encuentra buscará dentro de ella a la etiqueta "news_results"
+	
+6. Separa el link y con él busca el texto en el método textOfPage.
+	a. El método recibe el link como parámetro.
+	b. Utiliza Jsoup para trabajar con una página HTML.
+	c. Utiliza readability para tomar el contenido.
+		i. Si no puede tomarlo retorna un string vacio ("").
+		ii. Si puede tomarlo reenvia sólo el texto.
+		
+7. Si el texto no es vacio("") carga todos los datos en un contentBuider para luego hacer un Document
+
+8. Una vez recorrida las noticias se retorna una lista de Documents 
+
