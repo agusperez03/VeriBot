@@ -12,6 +12,11 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import net.dankito.readability4j.Readability4J;
+import net.dankito.readability4j.Article;
+import org.jsoup.Jsoup;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -68,8 +73,8 @@ public class NewsSearchService {
             					"?engine=google&q=" + encodedQuery +
                                 "&api_key=" + apiKey +
                                 "&gl=" + country +          // Country
-                                "&hl=" +country+          // Language
-                                "&tbm=nws" +language+       // News search only
+                                "&hl=" +language+          // Language
+                                "&tbm=nws"+        // News search only
                                 "&num=" + maxResults;
             
             HttpRequest request = HttpRequest.newBuilder()
@@ -105,6 +110,7 @@ public class NewsSearchService {
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode rootNode = objectMapper.readTree(responseBody);
             
+            String link,text,title,source,date = "";
             
             // We first tried to get news from "people_also_search_for"
             if (rootNode.has("people_also_search_for")) {
@@ -114,30 +120,36 @@ public class NewsSearchService {
                     if (item.has("news_results")) {
                         JsonNode newsResults = item.get("news_results");
                         for (JsonNode news : newsResults) {
+                        	text="";
                             if (news.has("link")) {       
-                                String link = news.get("link").asText();
-                                String title = news.has("title") ? news.get("title").asText() : "";
-                                String source = news.has("source") ? news.get("source").asText() : "";
-                                String date = news.has("date") ? news.get("date").asText() : "";
                                 
-                                StringBuilder contentBuilder = new StringBuilder();
-                                Map<String, String> metadataMap = new HashMap<>();
-                                contentBuilder.append("Title: ").append(title);
-                                contentBuilder.append("Date: ").append(date);
-                                contentBuilder.append("Source: ").append(source);
+                            	link = news.get("link").asText();
+                            	text = textOfPage(link);
+                            	if(text!="") {
+                            		title = news.has("title") ? news.get("title").asText() : "";
+                                    source = news.has("source") ? news.get("source").asText() : "";
+                                    date = news.has("date") ? news.get("date").asText() : "";
+                                    
+                                    
+                                    StringBuilder contentBuilder = new StringBuilder();
+                                    Map<String, String> metadataMap = new HashMap<>();
+                                    contentBuilder.append("Title: ").append(title);
+                                    contentBuilder.append(" - Date: ").append(date);
+                                    contentBuilder.append(" - Source: ").append(source);
+                                    contentBuilder.append(" - Text: ").append(text);
 
-                                metadataMap.put("date", date);
-                                metadataMap.put("source", source);
-                                metadataMap.put("link", link);
-                                
-                                Metadata metadata = new Metadata(metadataMap);
-                                Document doc = Document.from(contentBuilder.toString(), metadata);
-                                
-                                results.add(doc);
-                                if (results.size() >= maxResults) {
-                                    return results;
-                                }
-                                
+                                    metadataMap.put("date", date);
+                                    metadataMap.put("source", source);
+                                    metadataMap.put("link", link);
+                                    
+                                    Metadata metadata = new Metadata(metadataMap);
+                                    Document doc = Document.from(contentBuilder.toString(), metadata);
+                                    
+                                    results.add(doc);
+                                    if (results.size() >= maxResults) {
+                                        return results;
+                                    }
+                            	}                                
                             }
                         }
                     }
@@ -149,28 +161,35 @@ public class NewsSearchService {
             if (results.size() < maxResults && rootNode.has("news_results")) {
                 JsonNode newsResults = rootNode.get("news_results");
                 for (JsonNode news : newsResults) {
+                	text="";
                     if (news.has("link")) {
-                        String link = news.get("link").asText();
-                        String title = news.has("title") ? news.get("title").asText() : "";
-                        String source = news.has("source") ? news.get("source").asText() : "";
-                        String date = news.has("date") ? news.get("date").asText() : "";
+                        link = news.get("link").asText();
+                        text = textOfPage(link);
                         
-                        StringBuilder contentBuilder = new StringBuilder();
-                        Map<String, String> metadataMap = new HashMap<>();
-                        contentBuilder.append("Title: ").append(title);
-                        contentBuilder.append("Date: ").append(date);
-                        contentBuilder.append("Source: ").append(source);
-
-                        metadataMap.put("date", date);
-                        metadataMap.put("source", source);
-                        metadataMap.put("link", link);
-                        
-                        Metadata metadata = new Metadata(metadataMap);
-                        Document doc = Document.from(contentBuilder.toString(), metadata);
-                        
-                        results.add(doc);
-                        if (results.size() >= maxResults) {
-                            break;
+                        if(text!="") {
+	                        title = news.has("title") ? news.get("title").asText() : "";
+	                        source = news.has("source") ? news.get("source").asText() : "";
+	                        date = news.has("date") ? news.get("date").asText() : "";
+	                        
+	                        
+	                        StringBuilder contentBuilder = new StringBuilder();
+	                        Map<String, String> metadataMap = new HashMap<>();
+	                        contentBuilder.append("Title: ").append(title);
+	                        contentBuilder.append(" - Date: ").append(date);
+	                        contentBuilder.append(" - Source: ").append(source);
+	                        contentBuilder.append(" - Text: ").append(text);
+	
+	                        metadataMap.put("date", date);
+	                        metadataMap.put("source", source);
+	                        metadataMap.put("link", link);
+	                        
+	                        Metadata metadata = new Metadata(metadataMap);
+	                        Document doc = Document.from(contentBuilder.toString(), metadata);
+	                        
+	                        results.add(doc);
+	                        if (results.size() >= maxResults) {
+	                            break;
+	                        }
                         }
                     }
                 }
@@ -186,6 +205,34 @@ public class NewsSearchService {
     }
     
     /**
+     * Extracts the text from a URL.
+     *
+     * @param url the URL to extract from
+     * @return the plain text
+     */
+    private String textOfPage(String URL) {
+		// TODO Auto-generated method stub
+    	try {
+	    	String html = Jsoup.connect(URL)
+	                .userAgent("Mozilla/5.0")
+	                .timeout(10000)
+	                .get()
+	                .html();
+	
+			Readability4J readability = new Readability4J(URL, html);
+			Article article = readability.parse();
+			
+			return article.getTextContent();
+		
+		}catch (IOException e) {
+			System.err.println("Error al leer la URL: " + URL);
+			e.printStackTrace();
+			return "";
+		}
+
+	}
+
+	/**
      * Extracts the domain name from a URL.
      *
      * @param url the URL to extract from
