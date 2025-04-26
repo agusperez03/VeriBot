@@ -45,7 +45,7 @@ public class VeriBot {
             query.add("Últimas novedades cepo cambiario Argentina abril 2024 actualización");
             query.add("Últimas noticias sobre el Papa Francisco mayo 2024 razones tendencias");
             
-            for(Document doc : searchService.searchNews(query.get(0),"it","it")) { 
+            for(Document doc : searchService.searchNews(query.get(2),"ar","es")) { 
             	System.out.println(doc.text());
             }
             
