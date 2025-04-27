@@ -1,6 +1,8 @@
 package com.veribot.service;
 
 import com.veribot.config.AzureOpenAIConfig;
+import com.veribot.model.ConversationSession;
+import com.veribot.model.ConversationState;
 import com.veribot.model.NewsVerificationResult;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.Metadata;
@@ -34,6 +36,12 @@ public class NewsVerificationService {
     private final String deploymentName;
     private final String apiVersion;
     private final HttpClient httpClient;
+    
+    // Conversation timeout in minutes
+    private static final int CONVERSATION_TIMEOUT_MINUTES = 30;
+    
+    // Store the current conversation session
+    private ConversationSession conversationSession;
 
     /**
      * Creates a new NewsVerificationService with the provided configurations.
@@ -48,17 +56,48 @@ public class NewsVerificationService {
         this.apiVersion = openAIConfig.getApiVersion();
         this.searchService = searchService;
         this.httpClient = HttpClient.newHttpClient();
+        this.conversationSession = new ConversationSession();
         
         logger.info("NewsVerificationService initialized with Azure OpenAI");
     }
 
     /**
      * Verifies a news query by searching for information and analyzing the results.
+     * This method integrates conversation context to determine if the query is related
+     * to a previously discussed news event.
      *
      * @param userQuery the user's query about a news item
      * @return a NewsVerificationResult containing the analysis
      */
     public NewsVerificationResult verifyNews(String userQuery) {
+        // Check if the conversation has expired due to inactivity
+        if (conversationSession.hasExpired(CONVERSATION_TIMEOUT_MINUTES)) {
+            logger.info("Conversation session expired, starting new session");
+            conversationSession.startNewEvent();
+        }
+        
+        conversationSession.updateLastInteractionTime();
+        
+        // If we're already discussing a news event, determine if this query is related
+        if (conversationSession.getState() == ConversationState.DISCUSSING_CURRENT_EVENT) {
+            String queryIntent = classifyQueryIntent(userQuery, conversationSession.getCurrentEvent());
+            
+            if (queryIntent.equals("SAME_EVENT")) {
+                // Query is about the same event, respond with the existing information
+                logger.info("Query is about the same event: {}", conversationSession.getCurrentEvent());
+                return createFollowUpResponse(userQuery);
+            } else if (queryIntent.equals("NEW_EVENT")) {
+                // Query is about a new event, initiate a new search
+                logger.info("Query is about a new event, initiating search");
+                conversationSession.startNewEvent();
+                // Continue with normal verification process
+            } else {
+                // Query is not news-related
+                return createIrrelevantQueryResponse();
+            }
+        }
+        
+        // If we don't have a current event or the query is about a new event
         // 1. Validate input for news-related content
         if (!isNewsRelatedQuery(userQuery)) {
             return createInvalidQueryResponse();
@@ -86,7 +125,116 @@ public class NewsVerificationService {
         }
 
         // 4. Analyze the search results
-        return analyzeNewsContent(userQuery, searchResults, languageCode);
+        NewsVerificationResult result = analyzeNewsContent(userQuery, searchResults, languageCode);
+        
+        // 5. Store the result in the conversation session
+        conversationSession.updateWithNewsResult(result);
+        
+        return result;
+    }
+    
+    /**
+     * Classifies a user query to determine if it's about the current event,
+     * a new event, or an irrelevant topic.
+     * 
+     * @param userQuery The user's query
+     * @param currentEvent The current event being discussed
+     * @return A string indicating the intent ("SAME_EVENT", "NEW_EVENT", or "IRRELEVANT")
+     */
+    private String classifyQueryIntent(String userQuery, String currentEvent) {
+        if (currentEvent == null || currentEvent.isEmpty()) {
+            return "NEW_EVENT";
+        }
+        
+        String promptTemplate = """
+            The conversation is currently about this news topic:
+            "%s"
+            
+            The user has asked:
+            "%s"
+            
+            Determine if the user's question is:
+            1. About the same news topic we're already discussing
+            2. About a new, different news topic
+            3. Not related to any news topic at all
+            
+            Respond ONLY with one of these exact phrases:
+            "SAME_EVENT" if it's about the same topic
+            "NEW_EVENT" if it's about a different news topic
+            "IRRELEVANT" if it's not about news
+            """;
+        
+        String prompt = String.format(promptTemplate, currentEvent, userQuery);
+        String response = generateAzureOpenAIResponse(prompt, 0.0);
+        
+        response = response.trim().toUpperCase();
+        logger.debug("Query intent classification: {}", response);
+        
+        if (response.contains("SAME_EVENT")) {
+            return "SAME_EVENT";
+        } else if (response.contains("NEW_EVENT")) {
+            return "NEW_EVENT";
+        } else {
+            return "IRRELEVANT";
+        }
+    }
+    
+    /**
+     * Creates a response for follow-up questions about the current event.
+     * 
+     * @param userQuery The user's follow-up question
+     * @return A NewsVerificationResult containing information from the current session
+     */
+    private NewsVerificationResult createFollowUpResponse(String userQuery) {
+        // Generate a response specific to the follow-up question
+        String promptTemplate = """
+            You are answering a follow-up question about a news event.
+            
+            The news event summary: "%s"
+            Truthfulness rating: %d%%
+            Justification: "%s"
+            
+            The user is now asking: "%s"
+            
+            Based on the information above, provide a direct answer to the user's follow-up question.
+            Answer in plain text without any special formatting or labeling.
+            Keep your answer conversational, helpful, and relevant to the question.
+            """;
+        
+        String prompt = String.format(
+            promptTemplate,
+            conversationSession.getCurrentEventSummary(),
+            conversationSession.getTruthfulnessPercentage(),
+            conversationSession.getJustification(),
+            userQuery
+        );
+        
+        String response = generateAzureOpenAIResponse(prompt, 0.0);
+        logger.debug("Follow-up response: {}", response);
+        
+        // Simply use the plain text response directly
+        return new NewsVerificationResult(
+            response.trim(),
+            conversationSession.getTruthfulnessPercentage(),
+            conversationSession.getJustification(),
+            new ArrayList<>() // Empty sources since we're using cached info
+        );
+    }
+    
+    /**
+     * Creates a response for when the user query is irrelevant (not news-related).
+     *
+     * @return a NewsVerificationResult with an appropriate message
+     */
+    private NewsVerificationResult createIrrelevantQueryResponse() {
+        conversationSession.setState(ConversationState.IRRELEVANT_TOPIC);
+        
+        return new NewsVerificationResult(
+                "I can only help with questions about news events and factual information.",
+                0,
+                "Your question doesn't appear to be about a news event or topic that can be verified.",
+                List.of()
+        );
     }
 
     /**

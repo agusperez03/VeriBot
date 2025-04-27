@@ -77,7 +77,7 @@ public class VeriBot {
             }
 
             try {
-                System.out.println("\nAnalyzing news content... Please wait.");
+                System.out.println("\nProcessing your query... Please wait.");
                 NewsVerificationResult result = verificationService.verifyNews(userInput);
                 printVerificationResult(result);
             } catch (Exception e) {
@@ -103,6 +103,8 @@ public class VeriBot {
         System.out.println("  - Is it true that [some claim]?");
         System.out.println("  - Give me the latest news on climate change");
         System.out.println("  - What's going on with the elections in Brazil?");
+        System.out.println("\nVeriBot now remembers context! You can ask follow-up questions about");
+        System.out.println("the news topic you're discussing and get relevant answers.");
         System.out.println("\nType 'exit' at any time to quit the application.");
         System.out.println("-".repeat(80));
     }
