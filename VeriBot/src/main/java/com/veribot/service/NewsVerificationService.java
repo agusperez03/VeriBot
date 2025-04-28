@@ -61,7 +61,7 @@ public class NewsVerificationService {
         logger.info("NewsVerificationService initialized with Azure OpenAI");
     }
 
-    /**
+	/**
      * Verifies a news query by searching for information and analyzing the results.
      * This method integrates conversation context to determine if the query is related
      * to a previously discussed news event.
@@ -625,4 +625,14 @@ public class NewsVerificationService {
         }
     }
 
+
+    /**
+     * Get ConversationSession object.
+     *
+     * @return ConversationSession.
+     */
+    public ConversationSession getConversationSession() {
+		return conversationSession;
+	}
+    
 }
