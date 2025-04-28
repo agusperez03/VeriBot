@@ -2,6 +2,7 @@ package com.veribot;
 
 import com.veribot.config.AzureOpenAIConfig;
 import com.veribot.config.SerpApiConfig;
+import com.veribot.model.ConversationState;
 import com.veribot.model.NewsVerificationResult;
 import com.veribot.service.NewsSearchService;
 import com.veribot.service.NewsVerificationService;
@@ -79,7 +80,7 @@ public class VeriBot {
             try {
                 System.out.println("\nProcessing your query... Please wait.");
                 NewsVerificationResult result = verificationService.verifyNews(userInput);
-                printVerificationResult(result);
+                printVerificationResult(result, verificationService.getConversationSession().getState());
             } catch (Exception e) {
                 logger.error("Error processing query: {}", e.getMessage(), e);
                 System.err.println("Error processing your query: " + e.getMessage());
@@ -113,8 +114,9 @@ public class VeriBot {
      * Prints the verification result in a formatted way.
      *
      * @param result the verification result to print
+     * @param conversationState 
      */
-    private static void printVerificationResult(NewsVerificationResult result) {
+    private static void printVerificationResult(NewsVerificationResult result, ConversationState conversationState) {
         System.out.println("\n" + "-".repeat(80));
         System.out.println("VERIFICATION RESULTS");
         System.out.println("-".repeat(80));
@@ -122,18 +124,20 @@ public class VeriBot {
         System.out.println("\nSUMMARY:");
         System.out.println(result.summary());
         
-        System.out.println("\nTRUTHFULNESS: " + result.truthfulnessPercentage() + "% - " + result.getTruthfulnessLevel());
-        
-        System.out.println("\nJUSTIFICATION:");
-        System.out.println(result.justification());
-        
-        if (!result.sourcesUsed().isEmpty()) {
-            System.out.println("\nSOURCES USED:");
-            for (String source : result.sourcesUsed()) {
-                System.out.println("- " + source);
+        if(conversationState == ConversationState.LOOKING_FOR_NEW_EVENT) {
+        	System.out.println("\nTRUTHFULNESS: " + result.truthfulnessPercentage() + "% - " + result.getTruthfulnessLevel());
+            
+            System.out.println("\nJUSTIFICATION:");
+            System.out.println(result.justification());
+            
+            if (!result.sourcesUsed().isEmpty()) {
+                System.out.println("\nSOURCES USED:");
+                for (String source : result.sourcesUsed()) {
+                    System.out.println("- " + source);
+                }
             }
         }
-        
+     
         System.out.println("\n" + "-".repeat(80));
         System.out.println("JSON OUTPUT:");
         System.out.println(result.toJson());
