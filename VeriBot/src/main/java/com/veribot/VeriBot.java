@@ -17,27 +17,22 @@ import java.util.Scanner;
  */
 public class VeriBot {
     private static final Logger logger = LoggerFactory.getLogger(VeriBot.class);
+    private AzureOpenAIConfig openAIConfig;
+    private SerpApiConfig serpApiConfig;
+    private NewsSearchService searchService;
+    private NewsVerificationService verificationService;
 
-    /**
-     * Main method to run the VeriBot news verification agent.
-     *
-     * @param args command line arguments (not used)
-     */
-    public static void main(String[] args) {
+    public VeriBot () {
         logger.info("Starting VeriBot News Verification Agent");
 
         try {
             // Initialize configurations
-            AzureOpenAIConfig openAIConfig = new AzureOpenAIConfig();
-            SerpApiConfig serpApiConfig = new SerpApiConfig();
-
+            this.openAIConfig = new AzureOpenAIConfig();
+            this.serpApiConfig = new SerpApiConfig();
             // Initialize services
-            NewsSearchService searchService = new NewsSearchService(serpApiConfig);
+            this.searchService = new NewsSearchService(serpApiConfig);
+            this.verificationService = new NewsVerificationService(openAIConfig, searchService);
             
-            NewsVerificationService verificationService = new NewsVerificationService(openAIConfig, searchService);
-            
-            // Start the user interaction loop
-            runInteractiveMode(verificationService);
         } catch (Exception e) {
             logger.error("Error initializing VeriBot: {}", e.getMessage(), e);
             System.err.println("Failed to start VeriBot: " + e.getMessage());
@@ -49,51 +44,49 @@ public class VeriBot {
             }
         }
     }
+    //             runInteractiveMode(verificationService);
+
 
     /**
      * Runs the interactive command-line interface for the VeriBot agent.
      *
      * @param verificationService the service to use for verifying news
      */
-    private static void runInteractiveMode(NewsVerificationService verificationService) {
-        Scanner scanner = new Scanner(System.in);
-        boolean running = true;
-
-        printWelcomeMessage();
-
-        while (running) {
-            System.out.print("\nEnter a news-related query (or type 'exit' to quit): ");
-            String userInput = scanner.nextLine().trim();
-
-            if (userInput.equalsIgnoreCase("exit") || 
-                userInput.equalsIgnoreCase("quit") || 
-                userInput.equalsIgnoreCase("q")) {
-                running = false;
-                continue;
-            }
-
-            if (userInput.isEmpty()) {
-                System.out.println("Please enter a valid query.");
-                continue;
-            }
-
+    public String run(String query) {
             try {
                 System.out.println("\nProcessing your query... Please wait.");
-                NewsVerificationResult result = verificationService.verifyNews(userInput);
-                printVerificationResult(result, verificationService.getConversationSession().getState());
+                NewsVerificationResult result = this.verificationService.verifyNews(query);
+                if(verificationService.getConversationSession().getState()==ConversationState.LOOKING_FOR_NEW_EVENT)
+                    return GetVerificationResult(result, verificationService.getConversationSession().getState());
+                else
+                    return result.summary();
             } catch (Exception e) {
                 logger.error("Error processing query: {}", e.getMessage(), e);
-                System.err.println("Error processing your query: " + e.getMessage());
+                return("Error processing your query: " + e.getMessage());
+
             }
-        }
-
-        System.out.println("Thank you for using VeriBot. Goodbye!");
-        scanner.close();
     }
-
+    private static String GetVerificationResult(NewsVerificationResult result, ConversationState conversationState) {
+        String answer = "";
+            answer.concat("VERIFICATION RESULTS");
+            answer.concat("\nSUMMARY:");
+            answer.concat(result.summary());
+            answer.concat("\nTRUTHFULNESS: " + result.truthfulnessPercentage() + "% - " + result.getTruthfulnessLevel());
+            answer.concat("\nJUSTIFICATION:");
+            answer.concat(result.justification());
+            
+            if (!result.sourcesUsed().isEmpty()) {
+                answer.concat("\nSOURCES USED:");
+                for (String source : result.sourcesUsed()) {
+                    answer.concat("- " + source);
+                }
+            }
+        return answer;
+    }
     /**
      * Prints a welcome message with instructions for using VeriBot.
      */
+    /* 
     private static void printWelcomeMessage() {
         System.out.println("\n" + "=".repeat(80));
         System.out.println("  Welcome to VeriBot - News Verification and Summarization Agent");
@@ -109,38 +102,6 @@ public class VeriBot {
         System.out.println("\nType 'exit' at any time to quit the application.");
         System.out.println("-".repeat(80));
     }
+    */
 
-    /**
-     * Prints the verification result in a formatted way.
-     *
-     * @param result the verification result to print
-     * @param conversationState 
-     */
-    private static void printVerificationResult(NewsVerificationResult result, ConversationState conversationState) {
-        System.out.println("\n" + "-".repeat(80));
-        System.out.println("VERIFICATION RESULTS");
-        System.out.println("-".repeat(80));
-        
-        System.out.println("\nSUMMARY:");
-        System.out.println(result.summary());
-        
-        if(conversationState == ConversationState.LOOKING_FOR_NEW_EVENT) {
-        	System.out.println("\nTRUTHFULNESS: " + result.truthfulnessPercentage() + "% - " + result.getTruthfulnessLevel());
-            
-            System.out.println("\nJUSTIFICATION:");
-            System.out.println(result.justification());
-            
-            if (!result.sourcesUsed().isEmpty()) {
-                System.out.println("\nSOURCES USED:");
-                for (String source : result.sourcesUsed()) {
-                    System.out.println("- " + source);
-                }
-            }
-        }
-     
-        System.out.println("\n" + "-".repeat(80));
-        System.out.println("JSON OUTPUT:");
-        System.out.println(result.toJson());
-        System.out.println("-".repeat(80));
-    }
 }
