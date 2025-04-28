@@ -75,7 +75,23 @@
             <version>5.10.1</version>
             <scope>test</scope>
         </dependency>
+        
+        <!-- Spring Boot Starter Web: para exponer endpoints HTTP -->
+		<dependency>
+		   	<groupId>org.springframework.boot</groupId>
+ 		  	<artifactId>spring-boot-starter-web</artifactId>
+    		<version>3.4.5</version>
+		</dependency>
+		
+		<!-- Spring Boot Starter: para que el proyecto arranque como aplicación Spring -->
+		<dependency>
+		    <groupId>org.springframework.boot</groupId>
+		    <artifactId>spring-boot-starter</artifactId>
+		    <version>3.4.5</version>
+		</dependency>
+		
     </dependencies>
+    
 
     <build>
         <plugins>
@@ -112,6 +128,11 @@
                     </execution>
                 </executions>
             </plugin>
+            
+            <plugin>
+	            <groupId>org.springframework.boot</groupId>
+	            <artifactId>spring-boot-maven-plugin</artifactId>
+        	</plugin>
         </plugins>
     </build>
 </project>
