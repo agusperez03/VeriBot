@@ -68,17 +68,17 @@ public class VeriBot {
     }
     private static String GetVerificationResult(NewsVerificationResult result, ConversationState conversationState) {
         String answer = "";
-            answer.concat("VERIFICATION RESULTS");
-            answer.concat("\nSUMMARY:");
-            answer.concat(result.summary());
-            answer.concat("\nTRUTHFULNESS: " + result.truthfulnessPercentage() + "% - " + result.getTruthfulnessLevel());
-            answer.concat("\nJUSTIFICATION:");
-            answer.concat(result.justification());
+            answer = answer.concat("VERIFICATION RESULTS");
+            answer = answer.concat("\nSUMMARY:");
+            answer = answer.concat(result.summary());
+            answer = answer.concat("\nTRUTHFULNESS: " + result.truthfulnessPercentage() + "% - " + result.getTruthfulnessLevel());
+            answer = answer.concat("\nJUSTIFICATION:");
+            answer = answer.concat(result.justification());
             
             if (!result.sourcesUsed().isEmpty()) {
-                answer.concat("\nSOURCES USED:");
+                answer = answer.concat("\nSOURCES USED:");
                 for (String source : result.sourcesUsed()) {
-                    answer.concat("- " + source);
+                    answer = answer.concat("- " + source);
                 }
             }
         return answer;
