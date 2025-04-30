@@ -127,8 +127,7 @@ public class NewsVerificationService {
         // 4. Analyze the search results
         NewsVerificationResult result = analyzeNewsContent(userQuery, searchResults, languageCode);
         
-        // 5. Store the result in the conversation session
-        conversationSession.updateWithNewsResult(result);
+        
         
         return result;
     }
@@ -272,7 +271,7 @@ public class NewsVerificationService {
         LocalDate currentDate = LocalDate.now();
         String promptTemplate = """
             Given the following user query, do two things:
-            1. Convert it into an optimized search query, focusing on key facts, dates, places, or persons. If the user did not specify a date, append this date %s.
+            1. Convert it into an optimized search query, focusing on key facts, dates, places, or persons. If the user did not specify a date, append this date %s.The date must be in this format mm/dd/aaaa . The generated search query must be in the language of the user's query 
             2. Guess the country related to the query or the user, based on the context (e.g., if the query mentions a country, city, or uses a specific language).
             
             Return the answer ONLY in this exact JSON format:
@@ -462,7 +461,7 @@ public class NewsVerificationService {
             // Create the request body
             JSONObject requestBody = new JSONObject();
             requestBody.put("temperature", temperature);
-            requestBody.put("max_tokens", 800);
+            requestBody.put("max_completion_tokens", 800);
             
             JSONArray messages = new JSONArray();
             JSONObject userMessage = new JSONObject();
@@ -603,7 +602,7 @@ public class NewsVerificationService {
          */
         public static String[] findCountryAndLanguage(String countryName) {
             try {
-                String path = "VeriBot/google_countries.JSON"; // ajustalo si tu ruta es distinta
+                String path = "/home/roman7978/Documentos/VeriBot/VeriBot/google_countries.JSON"; // ajustalo si tu ruta es distinta
                 String content = Files.readString(Paths.get(path));
                 JSONArray countriesArray = new JSONArray(content);
 

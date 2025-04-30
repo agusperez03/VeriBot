@@ -4,61 +4,37 @@ import com.veribot.config.AzureOpenAIConfig;
 import com.veribot.config.SerpApiConfig;
 import com.veribot.model.ConversationState;
 import com.veribot.model.NewsVerificationResult;
+import com.veribot.model.UserContext;
 import com.veribot.service.NewsSearchService;
 import com.veribot.service.NewsVerificationService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.util.Scanner;
 
 /**
  * Main entry point for the VeriBot news verification and summarization agent.
  */
+@Component
 public class VeriBot {
     private static final Logger logger = LoggerFactory.getLogger(VeriBot.class);
-    private AzureOpenAIConfig openAIConfig;
-    private SerpApiConfig serpApiConfig;
-    private NewsSearchService searchService;
-    private NewsVerificationService verificationService;
-
-    public VeriBot () {
-        logger.info("Starting VeriBot News Verification Agent");
-
-        try {
-            // Initialize configurations
-            this.openAIConfig = new AzureOpenAIConfig();
-            this.serpApiConfig = new SerpApiConfig();
-            // Initialize services
-            this.searchService = new NewsSearchService(serpApiConfig);
-            this.verificationService = new NewsVerificationService(openAIConfig, searchService);
-            
-        } catch (Exception e) {
-            logger.error("Error initializing VeriBot: {}", e.getMessage(), e);
-            System.err.println("Failed to start VeriBot: " + e.getMessage());
-            
-            if (e instanceof IllegalStateException && e.getMessage().contains("environment variable")) {
-                System.err.println("\nPlease ensure you have set up the required environment variables.");
-                System.err.println("Create a .env file in the project root with the following variables:");
-                System.err.println("AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, AZURE_OPENAI_DEPLOYMENT_NAME, AZURE_OPENAI_API_VERSION");
-            }
-        }
-    }
-    //             runInteractiveMode(verificationService);
-
 
     /**
      * Runs the interactive command-line interface for the VeriBot agent.
      *
      * @param verificationService the service to use for verifying news
      */
-    public String run(String query) {
+    public String run(String query, UserContext userContext) {
             try {
-                System.out.println("\nProcessing your query... Please wait.");
-                NewsVerificationResult result = this.verificationService.verifyNews(query);
-                if(verificationService.getConversationSession().getState()==ConversationState.LOOKING_FOR_NEW_EVENT)
-                    return GetVerificationResult(result, verificationService.getConversationSession().getState());
-                else
+                System.out.println("\nProcessing your query... Please wait."); 
+                
+                NewsVerificationResult result = userContext.getVerificationService().verifyNews(query);
+                if(userContext.getVerificationService().getConversationSession().getState()==ConversationState.LOOKING_FOR_NEW_EVENT) {
+                	userContext.getVerificationService().getConversationSession().updateWithNewsResult(result);
+                	return GetVerificationResult(result);
+                }else
                     return result.summary();
             } catch (Exception e) {
                 logger.error("Error processing query: {}", e.getMessage(), e);
@@ -66,21 +42,21 @@ public class VeriBot {
 
             }
     }
-    private static String GetVerificationResult(NewsVerificationResult result, ConversationState conversationState) {
+    private static String GetVerificationResult(NewsVerificationResult result) {
         String answer = "";
-            answer = answer.concat("VERIFICATION RESULTS");
-            answer = answer.concat("\nSUMMARY:");
-            answer = answer.concat(result.summary());
-            answer = answer.concat("\nTRUTHFULNESS: " + result.truthfulnessPercentage() + "% - " + result.getTruthfulnessLevel());
-            answer = answer.concat("\nJUSTIFICATION:");
-            answer = answer.concat(result.justification());
+        answer = answer.concat("VERIFICATION RESULTS");
+        answer = answer.concat("\nSUMMARY:");
+        answer = answer.concat(result.summary());
+        answer = answer.concat("\nTRUTHFULNESS: " + result.truthfulnessPercentage() + "% - " + result.getTruthfulnessLevel());
+        answer = answer.concat("\nJUSTIFICATION:");
+        answer = answer.concat(result.justification());
             
-            if (!result.sourcesUsed().isEmpty()) {
-                answer = answer.concat("\nSOURCES USED:");
-                for (String source : result.sourcesUsed()) {
-                    answer = answer.concat("- " + source);
-                }
+        if (!result.sourcesUsed().isEmpty()) {
+        	answer = answer.concat("\nSOURCES USED:");
+            for (String source : result.sourcesUsed()) {
+                answer = answer.concat("- " + source);
             }
+        }
         return answer;
     }
     /**
