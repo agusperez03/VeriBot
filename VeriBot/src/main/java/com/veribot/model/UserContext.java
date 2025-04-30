@@ -25,7 +25,7 @@ public class UserContext {
             // Initialize services
             this.searchService = new NewsSearchService(serpApiConfig);
             this.verificationService = new NewsVerificationService(openAIConfig, searchService);
-            
+            System.out.println("Creando una nueva sesion... User ID: "+sessionId);
         } catch (Exception e) {
             System.err.println("Failed to start VeriBot: " + e.getMessage());
             

@@ -12,10 +12,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
@@ -601,9 +603,13 @@ public class NewsVerificationService {
          * @return a String array: [countryCode, languageCode], or null if not found
          */
         public static String[] findCountryAndLanguage(String countryName) {
-            try {
-                String path = "/home/roman7978/Documentos/VeriBot/VeriBot/google_countries.JSON"; // ajustalo si tu ruta es distinta
-                String content = Files.readString(Paths.get(path));
+            try(InputStream is = ClassLoader.getSystemResourceAsStream("google_countries.JSON")){
+                if (is == null) {
+                   System.err.println("Archivo no encontrado en classpath");
+                   return null;
+                }
+                String content = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+
                 JSONArray countriesArray = new JSONArray(content);
 
                 for (int i = 0; i < countriesArray.length(); i++) {
