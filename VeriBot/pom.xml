@@ -139,7 +139,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>com.veribot.VeriBot</mainClass>
+                            <mainClass>com.veribot.VeribotApplication</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
