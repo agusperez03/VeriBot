@@ -7,7 +7,7 @@ VeriBot is an AI-powered news verification and summarization agent that helps us
 
 ## Architecture and Implementation Overview
 
-![image](https://github.com/user-attachments/assets/edd774be-8902-4a04-a7d1-c92efeaa97cc)
+![architecture](https://github.com/user-attachments/assets/f16ff77a-2785-4789-89eb-57a17ec9bc0b)
 
 VeriBot is a news verification and fact-checking application built with a multi-layered architecture:
 
