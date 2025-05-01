@@ -10,6 +10,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -603,7 +604,9 @@ public class NewsVerificationService {
          * @return a String array: [countryCode, languageCode], or null if not found
          */
         public static String[] findCountryAndLanguage(String countryName) {
-            try(InputStream is = ClassLoader.getSystemResourceAsStream("google_countries.JSON")){
+            try{
+            	ClassPathResource resource = new ClassPathResource("google_countries.JSON");
+                InputStream is = resource.getInputStream();
                 if (is == null) {
                    System.err.println("Archivo no encontrado en classpath");
                    return null;

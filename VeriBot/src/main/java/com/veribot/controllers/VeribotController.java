@@ -1,5 +1,6 @@
 package com.veribot.controllers;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,25 +21,26 @@ import jakarta.servlet.http.HttpSession;
 @RestController
 @RequestMapping("/api/veribot")
 public class VeribotController {
-
     @Autowired
-	ConversationService convServ; 
-    
+    ConversationService convServ; 
+
     @PostMapping
-    public ResponseEntity<Map<String, String>> processVeribotRequest(@RequestBody PromptModel request, 
-    		HttpSession session) {
-    	
-        if (request.getPrompt() == null || request.getPrompt().trim().isEmpty()) {
+    public ResponseEntity<Map<String, Object>> processVeribotRequest(@RequestBody PromptModel request, 
+            HttpSession session) {
+
+        if (request.getText() == null || request.getText().trim().isEmpty()) {
             return ResponseEntity.badRequest().body(Collections.singletonMap("error", "Query cannot be empty"));
         }
-        
+
         try {
-            String response = convServ.processQuery(request, session.getId());
-            return ResponseEntity.ok(Collections.singletonMap("response", response));
+            Map<String, Object> response = new HashMap<>();
+            response.put("text", convServ.processQuery(request, session.getId()));
+            response.put("type", "message");
+
+            return ResponseEntity.ok(response); 
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
                     .body(Collections.singletonMap("error", "Failed to process request: " + e.getMessage()));
         }
     }
-
-} 
+}

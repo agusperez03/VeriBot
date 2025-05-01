@@ -1,14 +1,17 @@
 package com.veribot.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PromptModel {
-	private String prompt;
+	private String text;
     
     // Getters y setters
-    public String getPrompt() {
-        return prompt;
+    public String getText() {
+        return text;
     }
     
-    public void setPrompt(String query) {
-        this.prompt = query;
+    public void setText(String query) {
+        this.text = query;
     }
 }
