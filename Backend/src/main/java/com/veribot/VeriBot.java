@@ -1,0 +1,83 @@
+package com.veribot;
+
+import com.veribot.config.AzureOpenAIConfig;
+import com.veribot.config.SerpApiConfig;
+import com.veribot.model.ConversationState;
+import com.veribot.model.NewsVerificationResult;
+import com.veribot.model.UserContext;
+import com.veribot.service.NewsSearchService;
+import com.veribot.service.NewsVerificationService;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import java.util.Scanner;
+
+/**
+ * Main entry point for the VeriBot news verification and summarization agent.
+ */
+@Component
+public class VeriBot {
+    private static final Logger logger = LoggerFactory.getLogger(VeriBot.class);
+
+    /**
+     * Runs the interactive command-line interface for the VeriBot agent.
+     *
+     * @param verificationService the service to use for verifying news
+     */
+    public String run(String query, UserContext userContext) {
+            try {
+                System.out.println("\nProcessing your query... Please wait."); 
+                
+                NewsVerificationResult result = userContext.getVerificationService().verifyNews(query);
+                if(userContext.getVerificationService().getConversationSession().getState()==ConversationState.LOOKING_FOR_NEW_EVENT) {
+                	userContext.getVerificationService().getConversationSession().updateWithNewsResult(result);
+                	return GetVerificationResult(result);
+                }else
+                    return result.summary();
+            } catch (Exception e) {
+                logger.error("Error processing query: {}", e.getMessage(), e);
+                return("Error processing your query: " + e.getMessage());
+
+            }
+    }
+    private static String GetVerificationResult(NewsVerificationResult result) {
+        String answer = "";
+        answer = answer.concat("VERIFICATION RESULTS");
+        answer = answer.concat("\nSUMMARY:");
+        answer = answer.concat(result.summary());
+        answer = answer.concat("\nTRUTHFULNESS: " + result.truthfulnessPercentage() + "% - " + result.getTruthfulnessLevel());
+        answer = answer.concat("\nJUSTIFICATION:");
+        answer = answer.concat(result.justification());
+            
+        if (!result.sourcesUsed().isEmpty()) {
+        	answer = answer.concat("\nSOURCES USED:");
+            for (String source : result.sourcesUsed()) {
+                answer = answer.concat("- " + source);
+            }
+        }
+        return answer;
+    }
+    /**
+     * Prints a welcome message with instructions for using VeriBot.
+     */
+    /* 
+    private static void printWelcomeMessage() {
+        System.out.println("\n" + "=".repeat(80));
+        System.out.println("  Welcome to VeriBot - News Verification and Summarization Agent");
+        System.out.println("=".repeat(80));
+        System.out.println("\nVeriBot helps you verify and summarize news content from multiple sources.");
+        System.out.println("\nExample queries:");
+        System.out.println("  - What happened yesterday in New York?");
+        System.out.println("  - Is it true that [some claim]?");
+        System.out.println("  - Give me the latest news on climate change");
+        System.out.println("  - What's going on with the elections in Brazil?");
+        System.out.println("\nVeriBot now remembers context! You can ask follow-up questions about");
+        System.out.println("the news topic you're discussing and get relevant answers.");
+        System.out.println("\nType 'exit' at any time to quit the application.");
+        System.out.println("-".repeat(80));
+    }
+    */
+
+}
