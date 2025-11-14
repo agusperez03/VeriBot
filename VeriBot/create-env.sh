@@ -4,13 +4,13 @@ echo "Creating .env file for VeriBot configuration..."
 
 cat > .env << EOL
 # Azure OpenAI Configuration
-AZURE_OPENAI_ENDPOINT=https://nroma-m9vom9d0-eastus2.cognitiveservices.azure.com/
-AZURE_OPENAI_API_KEY=4UAlQGAqc2NFSt0qkMemFI0AFOg27MVB4HrEqCMmRRN7dUjqycdIJQQJ99BDACHYHv6XJ3w3AAAAACOGDF2h
-AZURE_OPENAI_DEPLOYMENT_NAME=o3-mini
+AZURE_OPENAI_ENDPOINT=https://your-azure-openai-instance.cognitiveservices.azure.com/
+AZURE_OPENAI_API_KEY=your-azure-openai-api-key
+AZURE_OPENAI_DEPLOYMENT_NAME=your-deployment-name
 AZURE_OPENAI_API_VERSION=2024-12-01-preview
 
 # SerpAPI Configuration
-SERPAPI_KEY=6ef0b722ae420693a7ac0518b6d96f27f785c41eaf25b2c7d2ab762fe63a0627
+SERPAPI_KEY=your-serpapi-key
 
 EOL
 

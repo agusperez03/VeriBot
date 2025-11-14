@@ -1,6 +1,9 @@
 package com.veribot.model;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import dev.langchain4j.data.document.Document;
 
 /**
  * Represents a conversation session with the user, maintaining context about the current news topic.
@@ -12,6 +15,8 @@ public class ConversationSession {
     private String justification;
     private ConversationState state;
     private LocalDateTime lastInteractionTime;
+    private List<Document> currentNewsDocuments;
+    private boolean documentsEmbedded;
     
     /**
      * Creates a new conversation session with default state.
@@ -19,6 +24,8 @@ public class ConversationSession {
     public ConversationSession() {
         this.state = ConversationState.LOOKING_FOR_NEW_EVENT;
         this.lastInteractionTime = LocalDateTime.now();
+        this.currentNewsDocuments = new ArrayList<>();
+        this.documentsEmbedded = false;
     }
     
     /**
@@ -36,6 +43,23 @@ public class ConversationSession {
     }
     
     /**
+     * Updates the session with news documents for RAG.
+     * 
+     * @param documents The news documents to store
+     */
+    public void setCurrentNewsDocuments(List<Document> documents) {
+        this.currentNewsDocuments = documents != null ? new ArrayList<>(documents) : new ArrayList<>();
+        this.documentsEmbedded = false;
+    }
+    
+    /**
+     * Marks the current news documents as embedded in the vector store.
+     */
+    public void markDocumentsAsEmbedded() {
+        this.documentsEmbedded = true;
+    }
+    
+    /**
      * Sets the conversation state to indicate we're looking for a new event.
      */
     public void startNewEvent() {
@@ -43,6 +67,8 @@ public class ConversationSession {
         this.currentEventSummary = null;
         this.truthfulnessPercentage = 0;
         this.justification = null;
+        this.currentNewsDocuments = new ArrayList<>();
+        this.documentsEmbedded = false;
         this.state = ConversationState.LOOKING_FOR_NEW_EVENT;
         updateLastInteractionTime();
     }
@@ -93,5 +119,13 @@ public class ConversationSession {
     
     public LocalDateTime getLastInteractionTime() {
         return lastInteractionTime;
+    }
+    
+    public List<Document> getCurrentNewsDocuments() {
+        return currentNewsDocuments;
+    }
+    
+    public boolean areDocumentsEmbedded() {
+        return documentsEmbedded;
     }
 }

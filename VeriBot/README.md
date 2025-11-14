@@ -8,6 +8,8 @@ VeriBot is an AI-powered news verification and summarization agent built in Java
 - **Content Summarization**: Creates brief, understandable summaries of news articles
 - **Source Tracking**: Lists the sources used during the verification process
 - **Input Validation**: Detects and redirects non-news-related queries
+- **RAG (Retrieval-Augmented Generation)**: Embeds news articles and provides enhanced responses for follow-up questions
+- **Conversation Context**: Maintains context across multiple questions about the same news event
 
 ## How It Works
 
@@ -24,9 +26,19 @@ VeriBot follows a structured process:
 - Java 21 or higher
 - Maven
 - Azure OpenAI API access
-- Azure Bing Search API access
+- SerpAPI access (for news search)
+- Docker (for ChromaDB - RAG feature)
 
 ## Setup
+
+### 1. Prerequisites
+
+Install required software:
+- Java 21+
+- Maven
+- Docker (for ChromaDB)
+
+### 2. Environment Configuration
 
 1. Clone the repository
 2. Create a `.env` file in the project root with the following variables:
@@ -38,10 +50,20 @@ AZURE_OPENAI_API_KEY=your-azure-openai-api-key
 AZURE_OPENAI_DEPLOYMENT_NAME=your-deployment-name
 AZURE_OPENAI_API_VERSION=2023-05-15
 
-# Azure Bing Search API Configuration
-AZURE_BING_SEARCH_API_KEY=your-bing-search-api-key
-AZURE_BING_SEARCH_ENDPOINT=https://api.bing.microsoft.com/v7.0/search
+# SerpAPI Configuration (for news search)
+SERPAPI_API_KEY=your-serpapi-key
 ```
+
+### 3. Start ChromaDB (for RAG feature)
+
+```powershell
+cd VeriBot
+docker-compose up -d
+```
+
+For detailed RAG setup instructions, see [RAG_SETUP.md](RAG_SETUP.md).
+
+### 4. Build the Project
 
 3. Build the project using Maven:
 
@@ -63,6 +85,12 @@ Example queries:
 - "Give me the latest news on climate change"
 - "What's going on with the elections in Brazil?"
 
+**Follow-up questions** (uses RAG to retrieve relevant context):
+- "What were the main points?"
+- "Who was involved?"
+- "What happened next?"
+- "Were there any controversies?"
+
 ## Sample Output
 
 ```json
@@ -77,9 +105,15 @@ Example queries:
 ## Project Structure
 
 - `config/`: Configuration classes for Azure services
-- `model/`: Data models including NewsVerificationResult
-- `service/`: Core services for searching and verifying news content
+- `model/`: Data models including NewsVerificationResult, ConversationSession, UserContext
+- `service/`: Core services for searching, verifying news content, and RAG operations
+  - `NewsSearchService`: Searches for news using SerpAPI
+  - `NewsVerificationService`: Analyzes and verifies news content
+  - `RAGService`: Handles document embedding and retrieval using ChromaDB
+  - `ConversationService`: Manages user conversations and context
 - `VeriBot.java`: Main application entry point with CLI interface
+- `docker-compose.yml`: ChromaDB container configuration
+- `RAG_SETUP.md`: Detailed RAG setup and usage guide
 
 ## Truthfulness Scale
 

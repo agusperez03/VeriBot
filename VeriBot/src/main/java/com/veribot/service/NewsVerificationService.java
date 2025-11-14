@@ -19,8 +19,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,12 +26,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+
 /**
  * Service responsible for verifying news content and analyzing its truthfulness.
  */
 public class NewsVerificationService {
     private static final Logger logger = LoggerFactory.getLogger(NewsVerificationService.class);
     private final NewsSearchService searchService;
+    private final RAGService ragService;
+    private final String sessionId;
     private final String endpoint;
     private final String apiKey;
     private final String deploymentName;
@@ -51,17 +52,22 @@ public class NewsVerificationService {
      *
      * @param openAIConfig the Azure OpenAI configuration
      * @param searchService the news search service
+     * @param ragService the RAG service for document embedding and retrieval
+     * @param sessionId the session identifier for this user
      */
-    public NewsVerificationService(AzureOpenAIConfig openAIConfig, NewsSearchService searchService) {
+    public NewsVerificationService(AzureOpenAIConfig openAIConfig, NewsSearchService searchService, 
+                                   RAGService ragService, String sessionId) {
         this.endpoint = openAIConfig.getEndpoint();
         this.apiKey = openAIConfig.getApiKey();
         this.deploymentName = openAIConfig.getDeploymentName();
         this.apiVersion = openAIConfig.getApiVersion();
         this.searchService = searchService;
+        this.ragService = ragService;
+        this.sessionId = sessionId;
         this.httpClient = HttpClient.newHttpClient();
         this.conversationSession = new ConversationSession();
         
-        logger.info("NewsVerificationService initialized with Azure OpenAI");
+        logger.info("NewsVerificationService initialized with Azure OpenAI and RAG");
     }
 
 	/**
@@ -127,7 +133,15 @@ public class NewsVerificationService {
             return createNoResultsResponse(userQuery);
         }
 
-        // 4. Analyze the search results
+        // 4. Store documents in RAG vector database for future retrieval
+        conversationSession.setCurrentNewsDocuments(searchResults);
+        int storedCount = ragService.storeNewsDocuments(searchResults, sessionId);
+        logger.info("Stored {} documents in vector database", storedCount);
+        if (storedCount > 0) {
+            conversationSession.markDocumentsAsEmbedded();
+        }
+        
+        // 5. Analyze the search results
         NewsVerificationResult result = analyzeNewsContent(userQuery, searchResults, languageCode);
         
         
@@ -183,11 +197,20 @@ public class NewsVerificationService {
     
     /**
      * Creates a response for follow-up questions about the current event.
+     * Uses RAG to retrieve relevant context from embedded documents.
      * 
      * @param userQuery The user's follow-up question
      * @return A NewsVerificationResult containing information from the current session
      */
     private NewsVerificationResult createFollowUpResponse(String userQuery) {
+        // Retrieve relevant context using RAG if documents are embedded
+        String relevantContext = "";
+        if (conversationSession.areDocumentsEmbedded()) {
+            logger.info("Using RAG to retrieve relevant context for follow-up question");
+            List<String> contexts = ragService.retrieveRelevantContext(userQuery, sessionId);
+            relevantContext = ragService.formatContextForPrompt(contexts);
+        }
+        
         // Generate a response specific to the follow-up question
         String promptTemplate = """
             You are answering a follow-up question about a news event.
@@ -196,11 +219,15 @@ public class NewsVerificationService {
             Truthfulness rating: %d%%
             Justification: "%s"
             
+            %s
+            
             The user is now asking: "%s"
             
-            Based on the information above, provide a direct answer to the user's follow-up question.
+            Based on the information above (especially the relevant information from the articles), 
+            provide a direct answer to the user's follow-up question.
             Answer in plain text without any special formatting or labeling.
             Keep your answer conversational, helpful, and relevant to the question.
+            If the retrieved information is relevant, use it to provide a more detailed answer.
             """;
         
         String prompt = String.format(
@@ -208,11 +235,12 @@ public class NewsVerificationService {
             conversationSession.getCurrentEventSummary(),
             conversationSession.getTruthfulnessPercentage(),
             conversationSession.getJustification(),
+            relevantContext,
             userQuery
         );
         
         String response = generateAzureOpenAIResponse(prompt, 0.0);
-        logger.debug("Follow-up response: {}", response);
+        logger.debug("Follow-up response with RAG: {}", response);
         
         // Simply use the plain text response directly
         return new NewsVerificationResult(
@@ -412,13 +440,13 @@ public class NewsVerificationService {
             Metadata metadata = doc.metadata();
             
             // Check for source in metadata
-            String source = metadata.get("source");
+            String source = metadata.getString("source");
             if (source != null && !source.isEmpty()) {
                 sources.add(source);
             }
             
             // Check for URL in metadata to extract domain
-            String url = metadata.get("url");
+            String url = metadata.getString("url");
             if (url != null && !url.isEmpty()) {
                 try {
                     String domain = extractDomainFromUrl(url);

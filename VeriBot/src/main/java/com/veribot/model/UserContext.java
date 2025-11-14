@@ -6,12 +6,14 @@ import com.veribot.config.AzureOpenAIConfig;
 import com.veribot.config.SerpApiConfig;
 import com.veribot.service.NewsSearchService;
 import com.veribot.service.NewsVerificationService;
+import com.veribot.service.RAGService;
 
 public class UserContext {
 	private String sessionId;
     private LocalDateTime lastAccessed;
     private NewsSearchService searchService;
     private NewsVerificationService verificationService;
+    private RAGService ragService;
     private AzureOpenAIConfig openAIConfig;
     private SerpApiConfig serpApiConfig;
     
@@ -22,9 +24,14 @@ public class UserContext {
             // Initialize configurations
             this.openAIConfig = new AzureOpenAIConfig();
             this.serpApiConfig = new SerpApiConfig();
+            
+            // Initialize RAG service
+            this.ragService = new RAGService();
+            
             // Initialize services
             this.searchService = new NewsSearchService(serpApiConfig);
-            this.verificationService = new NewsVerificationService(openAIConfig, searchService);
+            this.verificationService = new NewsVerificationService(openAIConfig, searchService, ragService, sessionId);
+            
             System.out.println("Creando una nueva sesion... User ID: "+sessionId);
         } catch (Exception e) {
             System.err.println("Failed to start VeriBot: " + e.getMessage());
@@ -66,6 +73,10 @@ public class UserContext {
 
 	public SerpApiConfig getSerpApiConfig() {
 		return serpApiConfig;
+	}
+	
+	public RAGService getRagService() {
+		return ragService;
 	}
     
 }
